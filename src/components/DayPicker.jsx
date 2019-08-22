@@ -440,10 +440,14 @@ class DayPicker extends React.PureComponent {
         break;
 
       case '?':
-        this.openKeyboardShortcutsPanel(onKeyboardShortcutsPanelClose);
+        if (!showKeyboardShortcuts) {
+          e.preventDefault();
+          this.openKeyboardShortcutsPanel(onKeyboardShortcutsPanelClose);
+        }
         break;
 
       case 'Escape':
+        e.preventDefault();
         if (showKeyboardShortcuts) {
           this.closeKeyboardShortcutsPanel();
         } else {

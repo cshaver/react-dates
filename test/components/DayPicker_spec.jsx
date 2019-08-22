@@ -22,6 +22,7 @@ const event = { preventDefault() {}, stopPropagation() {} };
 describe('DayPicker', () => {
   beforeEach(() => {
     sinon.stub(PureDayPicker.prototype, 'adjustDayPickerHeight');
+    sinon.spy(event, 'preventDefault');
   });
 
   afterEach(() => {
@@ -365,18 +366,41 @@ describe('DayPicker', () => {
       });
 
       describe('?', () => {
-        it('calls openKeyboardShortcutsPanel', () => {
+        it('calls openKeyboardShortcutsPanel and event.preventDefault if state.showKeyboardShortcuts === false', () => {
           const openKeyboardShortcutsPanelSpy = sinon.spy(PureDayPicker.prototype, 'openKeyboardShortcutsPanel');
           const wrapper = shallow(<DayPicker />).dive();
           wrapper.setState({
             focusedDate: today,
+            showKeyboardShortcuts: false,
           });
           wrapper.instance().onKeyDown({ ...event, key: '?' });
           expect(openKeyboardShortcutsPanelSpy.callCount).to.equal(1);
+          expect(event.preventDefault.callCount).to.equal(1);
+        });
+
+        it('does not call openKeyboardShortcutsPanel or event.preventDefault if state.showKeyboardShortcuts === true', () => {
+          const openKeyboardShortcutsPanelSpy = sinon.spy(PureDayPicker.prototype, 'openKeyboardShortcutsPanel');
+          const wrapper = shallow(<DayPicker />).dive();
+          wrapper.setState({
+            focusedDate: today,
+            showKeyboardShortcuts: true,
+          });
+          wrapper.instance().onKeyDown({ ...event, key: '?' });
+          expect(openKeyboardShortcutsPanelSpy.callCount).to.equal(0);
+          expect(event.preventDefault.callCount).to.equal(0);
         });
       });
 
       describe('Escape', () => {
+        it('calls event.preventDefault', () => {
+          const wrapper = shallow(<DayPicker />).dive();
+          wrapper.setState({
+            focusedDate: today,
+          });
+          wrapper.instance().onKeyDown({ ...event, key: 'Escape' });
+          expect(event.preventDefault.callCount).to.equal(1);
+        });
+
         it('sets state.showKeyboardShortcuts to false', () => {
           const wrapper = shallow(<DayPicker />).dive();
           wrapper.setState({
@@ -389,16 +413,19 @@ describe('DayPicker', () => {
 
         it('calls closeKeyboardShortcutsPanel if state.showKeyboardShortcuts === true', () => {
           const closeKeyboardShortcutsPanelSpy = sinon.stub(PureDayPicker.prototype, 'closeKeyboardShortcutsPanel');
-          const wrapper = shallow(<DayPicker />).dive();
+          const onBlurStub = sinon.stub();
+          const wrapper = shallow(<DayPicker onBlur={onBlurStub} />).dive();
           wrapper.setState({
             focusedDate: today,
             showKeyboardShortcuts: true,
           });
           wrapper.instance().onKeyDown({ ...event, key: 'Escape' });
+          expect(onBlurStub.callCount).to.equal(0);
           expect(closeKeyboardShortcutsPanelSpy.callCount).to.equal(1);
         });
 
         it('calls props.onBlur if state.showKeyboardShortcuts === false', () => {
+          const closeKeyboardShortcutsPanelSpy = sinon.stub(PureDayPicker.prototype, 'closeKeyboardShortcutsPanel');
           const onBlurStub = sinon.stub();
           const wrapper = shallow(<DayPicker onBlur={onBlurStub} />).dive();
           wrapper.setState({
@@ -406,6 +433,7 @@ describe('DayPicker', () => {
             showKeyboardShortcuts: false,
           });
           wrapper.instance().onKeyDown({ ...event, key: 'Escape' });
+          expect(closeKeyboardShortcutsPanelSpy.callCount).to.equal(0);
           expect(onBlurStub.callCount).to.equal(1);
         });
       });
